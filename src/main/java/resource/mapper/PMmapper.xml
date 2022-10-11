@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+        
+<mapper namespace="pms.dao.PMDao">
+	<resultMap type="jobdto" id="getJobPlan">
+		<result column="jid" property="id"/>
+		<result column="jname" property="name"/>
+		<result column="jstart" property="start"/>
+		<result column="jend" property="end"/>
+	</resultMap>
+	<select id="getJobPlan"	resultMap="getJobPlan" parameterType="int">
+		SELECT jid, jname, TO_CHAR(jstart, 'yyyy-mm-dd') jstart,
+				TO_CHAR(jend, 'yyyy-mm-dd') jend, required,
+				realstart, realend, content, pid, jstatus
+		FROM jobplan
+		WHERE pid = #{pid}
+		ORDER BY jstart
+	</select>
+	<select id="getJobMember" resultType="jmdto" parameterType="int">
+		SELECT m.mid, m.email, m.name, jmid, progress, nvl(jmstatus, ' ') jmstatus, jm.ppid
+		FROM jobmember jm, participants pp, member m
+		WHERE jm.ppid = pp.ppid AND pp.mid = m.mid
+			AND jid = #{jid}
+	</select>
+	<select id="getParticipants" resultType="jmdto" parameterType="int">
+		SELECT m.mid, pp.ppid, email, name, pp.pauth
+		FROM participants pp, member m
+		WHERE pp.mid = m.mid
+			AND pid = #{pid}
+			AND exitdate IS NULL
+	</select>
+	<select id="getNonPPMember" resultType="jmdto" parameterType="int">
+		SELECT mid, email, name, auth
+		FROM member
+		WHERE mid NOT IN (
+				SELECT mid
+				FROM participants
+				WHERE pid = #{pid}
+					AND exitdate IS NULL)
+	</select>
+	<select id="prjList" parameterType="int" resultType="project">
+		SELECT *
+		FROM project
+		WHERE pid IN (SELECT pid
+						FROM participants
+						WHERE mid = #{mid}
+						AND exitdate IS NULL)
+	</select>
+	<select id="getPauth" parameterType="jmdto" resultType="string">
+		SELECT pauth
+		FROM participants
+		WHERE pid = #{pid}
+		AND mid = #{mid}
+		AND exitdate IS NULL
+	</select>
+	<insert id="addJobPlan" parameterType="jobdto">
+		INSERT INTO jobplan(jid, jname, jstart, jend, content,
+				jregdate, juptdate, required, pid)
+		VALUES(jobplan_seq.nextval, #{name}, TO_DATE(#{start}, 'yyyy-mm-dd'), TO_DATE(#{end}, 'yyyy-mm-dd'),
+				#{content}, sysdate, sysdate, #{required}, #{pid})
+	</insert>
+	
+	<insert id="addJobMember" parameterType="int">
+		INSERT INTO jobmember
+		VALUES(jobmember_seq.nextval, jobplan_seq.currval, #{ppid}, 0, 'PROG')
+	</insert>
+	<update id="removePP" parameterType="int">
+		UPDATE participants
+		SET exitdate = sysdate
+		WHERE ppid = #{ppid}
+			AND exitdate IS NULL
+	</update>
+	<insert id="addPP" parameterType="jmdto">
+		INSERT INTO participants VALUES(participants_seq.nextval, 'Developer', #{pid}, #{mid}, sysdate, null)
+	</insert>
+	<update id="updateJobPlan" parameterType="jobdto">
+		UPDATE jobplan
+				SET jname = #{name},
+					 jstart = #{start},
+					 jend = #{end},
+					 juptdate = sysdate,
+					 content = #{content}
+		WHERE jid = #{id}
+	</update>
+	<delete id="deleteJobMember" parameterType="uptjob">
+		DELETE FROM jobmember
+		WHERE jid = #{jid}
+			<if test="ppids != null">
+				AND ppid NOT IN (
+				<foreach collection="ppids" item="item" separator=",">
+   					#{item}
+   				</foreach>)
+			</if>
+	</delete>
+	<insert id="updateJobMember" parameterType="map">
+		INSERT FIRST
+			WHEN #{ppid} NOT IN (
+				SELECT ppid
+				FROM jobmember
+				WHERE jid = #{jid}
+			) THEN
+				INTO jobmember VALUES (jobmember_seq.nextval, #{jid}, #{ppid}, 0, 'PROG')
+			SELECT *
+			FROM dual
+	</insert>
+	<delete id="deleteJob" parameterType="int">
+		DELETE FROM jobplan
+		WHERE jid = #{jid}
+	</delete>
+	<select id="getJobCheckList" parameterType="workpagesch" resultType="workpage">
+		SELECT *
+		FROM
+		(SELECT *
+		FROM 
+		(SELECT ab.*, rownum cnt
+		FROM 
+		(SELECT g.mid, g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid,g.jmid,g.empno, nvl(g.iprogress,'해당없음') iprogress, g.iid
+		FROM
+		(SELECT e.mid, e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid,e.empno, z.iprogress,z.iid
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname,c.mid,c.empno
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid,a.empno
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid) c, project d
+		WHERE c.pid=d.pid
+		AND c.pid=#{pid}) e,jobmember f, ISSUES z
+		WHERE 1=1
+		AND e.ppid=f.ppid AND z.jmid(+) = f.jmid
+		<if test="jmstatus!=null">
+		AND jmstatus LIKE '%'||#{jmstatus}||'%' 
+		</if> ) g,jobplan h
+		WHERE g.jid=h.jid
+		order by h.jid ASC) ab)
+		where cnt between #{start} and #{end} )
+	</select>
+	<select id="jobCheckCount" parameterType="workpagesch" resultType="int">
+		SELECT count(*)
+		FROM (	SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid,g.jmid,g.empno
+			FROM
+			(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid,e.empno
+			FROM 
+			(SELECT c.name,c.pid,c.ppid,d.pid,d.pname,c.mid,c.empno
+			FROM 
+			(SELECT a.name,b.ppid,b.pid,a.mid,a.empno
+			FROM MEMBER a, participants b
+			WHERE a.mid=b.mid) c, project d
+			WHERE c.pid=d.pid
+			AND c.pid=#{pid}) e,jobmember f
+			WHERE e.ppid=f.ppid) g,jobplan h
+			WHERE g.jid=h.jid)
+			where 1=1
+		<if test="jmstatus!=null">
+		AND jmstatus LIKE '%'||#{jmstatus}||'%' 
+		</if>
+	</select>
+	<update id="treatIssues" parameterType="issues">
+		UPDATE issues
+		SET iprogress = #{iprogress}
+			WHERE iid = #{iid}
+	</update>
+	<update id="changeJobStatus" parameterType="jmdto">
+		UPDATE jobmember
+		SET jmstatus = #{jmstatus}
+		WHERE jmid = #{jmid}
+	</update>
+	<select id="getNoticeList" parameterType="int" resultType="notice">
+		SELECT *
+		FROM notice
+		WHERE pid = #{pid}
+		ORDER BY nuptdate desc
+	</select>
+	<select id="pmNoticeDetail" parameterType="int" resultType="notice">
+		SELECT *
+		FROM notice
+		WHERE nid = #{nid}
+	</select>
+	<update id="updateNotice" parameterType="notice">
+		UPDATE notice
+		SET ntitle = #{ntitle},
+			ncontent = #{ncontent},
+			nuptdate = sysdate
+		WHERE nid = #{nid}
+	</update>
+	<insert id="insertNotice" parameterType="notice">
+		INSERT INTO notice
+		VALUES(notice_seq.nextval, #{pid}, #{ntitle}, #{ncontent}, sysdate, sysdate)
+	</insert>
+</mapper>

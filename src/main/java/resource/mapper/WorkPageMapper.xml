@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pms.dao.WorkPageDao">
+
+	<select id="getWorkPageList" resultType="workpage" parameterType="workpagesch">
+		SELECT *
+		FROM
+		(SELECT *
+		FROM 
+		(SELECT ab.*, rownum cnt
+		FROM 
+		(SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,
+		h.content,h.juptdate,h.jid,g.jmid,g.empno, nvl(g.iprogress,'해당없음') iprogress, g.iid
+		FROM
+		(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid,e.empno, z.iprogress,z.iid
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname,c.mid,c.empno
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid,a.empno
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid
+		AND a.mid=#{mid}) c, project d
+		WHERE c.pid=d.pid
+		AND c.pid=#{pid}) e,jobmember f, ISSUES z
+		WHERE 1=1
+		AND e.ppid=f.ppid AND z.jmid(+) = f.jmid
+		<if test="jmstatus!=null">
+		AND jmstatus LIKE '%'||#{jmstatus}||'%' 
+		</if> ) g,jobplan h
+		WHERE g.jid=h.jid
+		order by h.jid ASC) ab)
+		where cnt between #{start} and #{end} )
+	</select>
+	<select id="WorkPageList" parameterType="workpagesch" resultType="workpage" >
+		SELECT *
+		FROM 
+		(SELECT ab.*, rownum cnt
+		FROM 
+		(SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid,g.jmid,g.empno
+		FROM
+		(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid,e.empno
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname,c.mid,c.empno
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid,a.empno
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid
+		AND a.mid=#{mid}) c, project d
+		WHERE c.pid=d.pid
+		AND c.pid=#{pid}) e,jobmember f
+		WHERE e.ppid=f.ppid) g,jobplan h
+		WHERE g.jid=h.jid
+		order by h.jid ASC) ab
+	</select>
+	<select id="WorkPageTotCnt" parameterType="workpagesch" resultType="int">	
+		SELECT count(*)
+		FROM (	SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid,g.jmid,g.empno
+			FROM
+			(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid,e.empno
+			FROM 
+			(SELECT c.name,c.pid,c.ppid,d.pid,d.pname,c.mid,c.empno
+			FROM 
+			(SELECT a.name,b.ppid,b.pid,a.mid,a.empno
+			FROM MEMBER a, participants b
+			WHERE a.mid=b.mid
+			AND a.mid=#{mid}) c, project d
+			WHERE c.pid=d.pid
+			AND c.pid=#{pid}) e,jobmember f
+			WHERE e.ppid=f.ppid) g,jobplan h
+			WHERE g.jid=h.jid)
+			where 1=1
+		<if test="jmstatus!=null">
+		AND jmstatus LIKE '%'||#{jmstatus}||'%' 
+		</if>
+	</select>	
+	<select id="getWorkPageDetailList" resultType="workpage" parameterType="int" >
+		SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid
+		FROM
+		(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid
+		AND a.mid=#{mid}) c, project d
+		WHERE c.pid=d.pid) e,jobmember f
+		WHERE e.ppid=f.ppid) g,jobplan h
+		WHERE g.jid=h.jid
+		AND h.jid=#{jid}
+	</select>
+	<select id="WorkPageDetailList" resultType="workpage" >
+		SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid
+		FROM
+		(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid
+		AND a.mid=#{mid}) c, project d
+		WHERE c.pid=d.pid) e,jobmember f
+		WHERE e.ppid=f.ppid) g,jobplan h
+		WHERE g.jid=h.jid
+		AND h.jid=#{jid}
+	</select>
+	<select id="getWorkPageFile" resultType="workpage" >
+		SELECT *
+		FROM
+		(SELECT g.name,g.progress,g.jmstatus,h.jname,h.jstart,h.jend,g.pname,h.content,h.juptdate,h.jid,g.jmid
+		FROM
+		(SELECT e.name,f.jid,f.progress,f.jmstatus,e.pname,f.jmid
+		FROM 
+		(SELECT c.name,c.pid,c.ppid,d.pid,d.pname
+		FROM 
+		(SELECT a.name,b.ppid,b.pid,a.mid
+		FROM MEMBER a, participants b
+		WHERE a.mid=b.mid
+		AND a.mid=#{mid}) c, project d
+		WHERE c.pid=d.pid) e,jobmember f
+		WHERE e.ppid=f.ppid) g,jobplan h
+		WHERE g.jid=h.jid
+		AND h.jid=#{jid}) i,jobfile j
+		where i.jmid=j.jmid
+		AND i.jmid=#{jmid}
+	</select>
+	<insert id="insertFile" parameterType="workpagefile">
+		insert into jobfile values(jobfile_seq.nextval,
+									#{jmid},
+									sysdate,
+									#{path},
+									#{fname} )
+	</insert>
+	<update id="updateWorkPage" parameterType="workpage" >
+		UPDATE jobmember 
+		SET jmstatus='REQ' 
+		WHERE jmid=#{jmid}	
+	</update>
+	<delete id="deleteWorkPageFile" parameterType="int">
+		DELETE 
+		FROM jobfile 
+		WHERE fid = #{fid}	
+	</delete>
+    <insert id="insertIssue" parameterType="int">
+        INSERT INTO issues values(issues_seq.NEXTVAL,
+        				 #{ititle},
+        				 #{icontent}, 
+        				 #{iprogress}, 
+        				 sysdate, 
+        				 sysdate, 
+        				 #{jmid} )
+    </insert>
+	<select id="getWorkIsDetail" parameterType="int" resultType="issues">
+		SELECT *
+		FROM issues
+		WHERE iid = #{iid}
+	</select>
+	<update id="updateIssues" parameterType="issues">
+		UPDATE issues
+		   SET ititle = #{ititle},
+			   icontent = #{icontent},
+			   iuptdate = sysdate
+		WHERE iid = #{iid}	
+	</update>
+	<delete id="deleteIssues" parameterType="int">
+		delete 
+		FROM issues
+		WHERE iid = #{iid}
+	</delete>
+</mapper>
+        
+        

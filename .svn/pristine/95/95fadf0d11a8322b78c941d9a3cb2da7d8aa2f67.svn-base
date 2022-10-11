@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+        
+<mapper namespace="pms.dao.ProjectDao">
+	<select id="totCnt" parameterType="projectsch" resultType="int">	 
+		 SELECT count(*)
+		 	FROM project
+		 WHERE 1=1		 
+		 <if test="pname!=null">
+		 AND pname LIKE '%'||#{pname}||'%'
+		 </if> 	 			 
+	</select>
+	<select id="getProjectList" parameterType="projectsch" resultType="project">
+		select *
+		from (
+			select p.*, rownum cnt
+		     from project p
+		     where 1=1
+		     	<if test="pname != null">
+					AND pname LIKE '%'||#{pname}||'%'
+				</if>
+		     )
+		where cnt between #{start} and #{end}
+	</select>
+
+	
+	<select id="getMemberList" resultType="member" parameterType="member">
+		SELECT * 
+		FROM member	
+		order by empno
+	</select>
+	
+	<select id="getPmemberList" resultType="promember" parameterType="int">
+		SELECT p.*, m.name
+		FROM participants p, member m
+		WHERE p.mid = m.mid
+		and pid = #{pid}
+	</select>
+
+	
+	<insert id="insertProject" parameterType="prjdto">
+		insert into project values(project_seq.nextval, #{pname},
+				#{pcomment}, TO_DATE(#{pstart}, 'yyyy-mm-dd'), TO_DATE(#{pend}, 'yyyy-mm-dd'), sysdate, 'WAIT')		   			
+	</insert>	
+	
+	<insert id="insertParticipants" parameterType="participants">
+      insert into participants values(participants_seq.nextval, #{pauth},
+            project_seq.currval, #{mid}, sysdate, sysdate)         
+    </insert>
+	
+	<select id="getProjectDetail" parameterType="int" resultType="project">
+		select pid, pname, pcomment, pstart, pend
+		from project
+		where pid = #{pid}
+	</select>
+
+	
+	<update id="updateProject" parameterType="prjdto">
+		UPDATE project
+		   SET pname = #{pname, jdbcType=VARCHAR},
+		       <if test="pstart != ''">
+					pstart = #{pstart, jdbcType=DATE},
+			   </if>
+			   <if test="pend != ''">
+					pend = #{pend, jdbcType=DATE},
+			   </if>
+			   pcomment = #{pcomment, jdbcType=VARCHAR}
+   	
+		WHERE pid = #{pid}	
+	</update>
+	
+	<update id="updateProjectStatus" parameterType="project" >
+		UPDATE project
+		SET pstatus=#{pstatus, jdbcType=VARCHAR} 
+		WHERE pid=#{pid}	
+	</update>
+	
+	<delete id="deleteProject" parameterType="int">
+		delete
+		from project
+		where pid = #{pid}
+	</delete>
+	<delete id="deleteMember" parameterType="int">
+		delete
+		from participants
+		where pid = #{pid}
+	</delete>		
+</mapper>

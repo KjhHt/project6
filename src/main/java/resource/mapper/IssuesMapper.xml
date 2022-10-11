@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pms.dao.IssuesDao">
+    <insert id="insertIssue" parameterType="issues">
+        INSERT INTO issues values(issues_seq.NEXTVAL, #{ititle}, #{icontent}, #{iprogress}, #{iregdate}, sysdate, #{jmid})
+    </insert>
+    
+    <select id="getIssuesList" parameterType="issues" resultType="issues">
+		SELECT iid, name, jname, ititle, iprogress, iregdate, iuptdate
+		FROM issues i, jobmember jm, jobplan jp,
+			(SELECT * FROM MEMBER m, participants pp WHERE m.mid = pp.mid) m
+		WHERE i.jmid = jm.jmid AND jm.ppid = m.ppid
+	</select>
+	
+	<select id="getIssueDetail" parameterType="int" resultType="issues">
+		SELECT iid, name, jname, ititle, icontent, iprogress, iregdate, iuptdate
+		FROM issues i, jobmember jm, jobplan jp,
+			(SELECT * FROM MEMBER m, participants pp WHERE m.mid = pp.mid) m
+		WHERE i.jmid = jm.jmid AND jm.ppid = m.ppid
+	</select>
+    
+    <delete id="deleteIssue" parameterType="int">
+    	DELETE FROM issues WHERE iid = #{iid}    
+    </delete>
+</mapper>

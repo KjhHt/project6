@@ -1,0 +1,134 @@
+package pms.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import pms.dao.MemberDao;
+import pms.vo.Member;
+import pms.vo.MemberProfile;
+import pms.vo.MemberSch;
+
+@Service
+public class MemberService {
+
+	@Autowired(required=false)
+	private MemberDao dao;
+	
+	// 사원 등록
+	public void register(Member ins) {
+		dao.register(ins);
+	}
+	
+	// 이메일 중복체크
+	public int checkEmail(String email) {
+		return dao.checkEmail(email);
+	}
+	
+	// 로그인
+	public Member memberLogin(Member m){
+		return dao.memberLogin(m);
+	}
+	
+	// 개별 사원 디테일 mid값으로 호출 
+	public Member getMemberDetail(int mid) {
+		return dao.getMemberDetail(mid);
+	}
+	
+	// 사원 권한부여 업데이트
+	public void authorize(Member upt) {
+		dao.authorize(upt);
+	}
+	
+	// 사원 삭제
+	public void deleteMember(int mid) {
+		dao.deleteMember(mid);
+	}
+	
+	// 이메일 발송 시 이름 값 저장
+	public String getMemberName(Member sch) {
+		return dao.getMemberName(sch);
+	}
+	
+	// 마이페이지 비밀번호 변경
+	public void uptPassword(Member upt) {
+		dao.uptPassword(upt);
+	}
+	
+	public List<Member> memberList(MemberSch sch){
+		sch.setCount( dao.totCnt(sch) );
+		System.out.println("총건수:"+sch.getCount());
+		if(sch.getPageSize()==0) {
+			sch.setPageSize(10);
+		}
+		sch.setPageCount((int)Math.ceil(sch.getCount()/(double)sch.getPageSize()));
+		if(sch.getCurPage()==0) {
+			sch.setCurPage(1);
+		}
+		if(sch.getCurPage()>sch.getPageCount()){
+			sch.setCurPage(sch.getPageCount());
+		}
+		int end = sch.getCurPage()*sch.getPageSize();
+		if(end>sch.getCount()) { // 총데이터 건수보다 크면..
+			sch.setEnd(sch.getCount());
+		}else {
+			sch.setEnd(end);
+		}
+		sch.setStart((sch.getCurPage()-1)*sch.getPageSize()+1);
+		sch.setBlockSize(5);
+		int blocknum = (int)(Math.ceil(sch.getCurPage()/(double)sch.getBlockSize()));
+		
+		int endBlock = blocknum*sch.getBlockSize();
+		if(endBlock>=sch.getPageCount()) {
+			endBlock = sch.getPageCount();
+		}
+		sch.setEndBlock(endBlock);
+		sch.setStartBlock((blocknum-1)*sch.getBlockSize()+1);
+		
+		return dao.memberList(sch);
+	}
+	
+	public void uptInfo(Member upt) {
+		dao.uptInfo(upt);
+	}
+	
+	@Value("${uploadprofile}")
+	private String path;
+	public void insProfile(MemberProfile ins) {
+		MultipartFile mpf = ins.getReport();
+		String fname = mpf.getOriginalFilename();
+		
+		File f = new File(path+fname);
+		try {
+			mpf.transferTo(f);
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(dao.checkProfile(ins.getMid()).equals("1")) {
+			dao.delProfile(ins.getMid());
+		}
+		dao.insProfile(new MemberProfile(ins.getMid(),path,fname));
+	}
+	
+	public MemberProfile getProfile(int mid) {
+		return dao.getProfile(mid);
+	}
+	
+	public void delProfile(int mid) {
+		dao.delProfile(mid);
+	}
+	
+	public Member sendTempPassword(Member m) {
+		return dao.sendTempPassword(m);
+	}
+	
+}

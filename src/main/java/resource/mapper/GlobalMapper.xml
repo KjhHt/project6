@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pms.dao.GlobalDao">
+    <select id="getAllPrjList" resultType="project">
+        select * from project
+    </select>
+    <select id="getMember" parameterType="string" resultType="member">
+        select * from member where email=#{email}
+    </select>
+    <select id="jobplanListPrj" parameterType="int" resultType="jobplan">
+        select * from jobplan where pid=#{pid}
+    </select>
+    <select id="memJobListPrj" parameterType="int" resultType="jobplan">
+        select jp.*
+        from JOBPLAN jp, (select * from PARTICIPANTS p, JOBMEMBER jm where p.MID = #{mid} and p.PPID = jm.PPID) myjob
+        where jp.JID = myjob.JID and jp.PID = #{pid}
+    </select>
+    <select id="jobMemberCount" parameterType="int" resultType="int">
+        select count(*) from JOBMEMBER where JID = #{jid}
+    </select>
+    <select id="jobMemberCompCount" parameterType="int" resultType="int">
+        select count(*) from JOBMEMBER where JID = #{jid} and JMSTATUS in ('COMP')
+    </select>
+    <select id="isProjectMember" parameterType="hashmap" resultType="boolean">
+        select count(*) from participants where mid=#{mid} and pid=#{pid}
+    </select>
+    <select id="checkProjectAuth" parameterType="hashmap" resultType="boolean">
+        select count(m.mid)
+        from participants p, member m
+        where p.mid = m.mid(+)
+          and ((p.mid = #{mid} and p.pid = #{pid})
+                   or (m.auth in ('ADMIN', 'CEO'))
+              )
+    </select>
+    <select id="isAdmin" parameterType="int" resultType="boolean">
+        select count(*) from member where auth in ('ADMIN', 'CEO');
+    </select>
+    <select id="testMember" parameterType="hashmap" resultType="boolean">
+        select * from member where mid=#{mid} 
+    </select>
+    <select id="getPrjMembers" parameterType="int" resultType="member">
+        select distinct m.* from PARTICIPANTS p, MEMBER m where p.PID = #{pid} and p.MID = m.MID
+    </select>
+    <select id="getMyPrjList" parameterType="int" resultType="project">
+        select distinct p.*
+        from PROJECT p,
+             (select * from PARTICIPANTS pp, MEMBER m where pp.MID = m.MID and m.MID = #{mid}) mm
+        where p.PID = mm.PID
+    </select>
+    <select id="getNotice" parameterType="int" resultType="notice">
+        select * from NOTICE where NID=#{NID}
+    </select>
+</mapper>

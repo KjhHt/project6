@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pms.dao.DashboardDao">
+	<select id="noticeList" parameterType="int" resultType="notice">
+		select * from notice where pid = #{pid} order by nuptdate desc
+	</select>
+	<select id="issueList" parameterType="int" resultType="issuesdash">
+		select iid, jname, ititle, iprogress, name, iuptdate
+		from issues i, jobmember jm, jobplan jp,
+			 (select * from member m, participants pp where m.mid = pp.mid) m
+		where i.jmid = jm.jmid and jm.jid = jp.jid and jm.ppid = m.ppid and jp.pid = #{pid}
+		order by iuptdate desc
+	</select>
+	<select id="issueTotCnt" parameterType="int" resultType="int">
+		select count(*)
+		from issues i, jobmember jm, jobplan jp,
+			 (select * from member m, participants pp where m.mid = pp.mid) m
+		where i.jmid = jm.jmid and jm.jid = jp.jid and jm.ppid = m.ppid and jp.pid = #{pid}
+	</select>
+	<select id="issueListPage" parameterType="issuessch" resultType="issuesdash">
+		select * from ( select ib.*, rownum cnt from (
+			select iid, jname, ititle, iprogress, name, iuptdate
+			from issues i, jobmember jm, jobplan jp,
+				(select * from member m, participants pp where m.mid = pp.mid) m
+			where i.jmid = jm.jmid and jm.jid = jp.jid and jm.ppid = m.ppid and jp.pid = #{pid}
+			order by iuptdate desc) ib)
+		where cnt between #{start} and #{end}
+	</select>
+	<select id="noticeTotCnt" parameterType="int" resultType="int">
+		select count(*) from notice where pid = #{pid}
+	</select>
+	<select id="noticeListPage" parameterType="noticesch" resultType="notice">
+		select * from (select nb.*, rownum cnt from (select * from notice where pid = #{pid} order by nuptdate desc) nb)
+		where cnt between #{start} and #{end}
+	</select>
+	<select id="allProject" resultType="project">
+		select * from project
+	</select>
+	<select id="projectTotCnt" parameterType="projectsch" resultType="int">
+		select count(*)
+		from project
+		where 1=1
+		<if test="pname !=null">
+		  and lower(pname) like '%'||lower(#{pname})||'%'
+		</if>
+	</select>
+	<select id="projectListPage" parameterType="projectsch" resultType="project">
+		select *
+		from
+		    (select prj.*, rownum cnt
+		     from
+		         (select *
+		          from project where 1=1
+		          <if test="pname != null">
+					  and lower(pname) like '%'||lower(#{pname})||'%'
+				  </if>
+		          ) prj)
+		where cnt between #{start} and #{end}
+	</select>
+	
+
+</mapper>

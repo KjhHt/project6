@@ -1,0 +1,79 @@
+package pms.dto;
+
+import java.util.Date;
+import java.util.List;
+
+public class ProjectDto {
+	private int pid;
+	private String pname;
+	private String pcomment;
+	private String pstart;
+	private String pend;
+	private Date pregdate;
+	private int selectPM;
+	private String pstatus;
+	private List<Integer> selectmember;
+	
+	public int getSelectPM() {
+		return selectPM;
+	}
+	public void setSelectPM(int selectPM) {
+		this.selectPM = selectPM;
+	}
+	public List<Integer> getSelectmember() {
+		return selectmember;
+	}
+	public void setSelectmember(List<Integer> selectmember) {
+		this.selectmember = selectmember;
+	}
+	public ProjectDto() {
+		// TODO Auto-generated constructor stub
+	}
+	public int getPid() {
+		return pid;
+	}
+	public void setPid(int pid) {
+		this.pid = pid;
+	}
+	public String getPname() {
+		return pname;
+	}
+	public void setPname(String pname) {
+		this.pname = pname;
+	}
+	public String getPcomment() {
+		return pcomment;
+	}
+	public void setPcomment(String pcomment) {
+		this.pcomment = pcomment;
+	}
+
+	public String getPstart() {
+		return pstart;
+	}
+	public void setPstart(String pstart) {
+		this.pstart = pstart;
+	}
+	public String getPend() {
+		return pend;
+	}
+	public void setPend(String pend) {
+		this.pend = pend;
+	}
+	public Date getPregdate() {
+		return pregdate;
+	}
+	public void setPregdate(Date pregdate) {
+		this.pregdate = pregdate;
+	}
+	public String getPstatus() {
+		return pstatus;
+	}
+	public void setPstatus(String pstatus) {
+		this.pstatus = pstatus;
+	}
+	
+	
+
+
+}

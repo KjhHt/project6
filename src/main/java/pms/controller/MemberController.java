@@ -1,0 +1,179 @@
+package pms.controller;
+
+import java.util.Locale;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.LocaleResolver;
+
+import pms.service.MemberService;
+import pms.vo.Member;
+import pms.vo.MemberProfile;
+import pms.vo.MemberSch;
+
+@Controller
+public class MemberController {
+	@Autowired(required = false)
+	private MemberService service;
+	
+	@Autowired(required=false)
+	private LocaleResolver localResolver;
+	
+	// http://localhost:7080/project06/register.do
+	@RequestMapping("register.do")
+	public String register(Member ins, Model d,
+				@RequestParam(value="lang", defaultValue = "") String lang, HttpServletRequest request, HttpServletResponse response) {
+		Locale locale = new Locale(lang);
+		localResolver.setLocale(request, response, locale);
+		if (ins != null && ins.getEmail() != null && ins.getName() != null) {
+			service.register(ins);
+			return "redirect:login.do";
+		}
+		d.addAttribute(new Member());
+		return "WEB-INF\\views\\login\\register.jsp";
+	}
+
+	@RequestMapping("dupCheck.do")
+	public String hasMember(@RequestParam("email") String email, Model d) {
+		System.out.println(email);
+		d.addAttribute("dupCheck", service.checkEmail(email) == 0 ? false : true);
+		return "pageJsonReport";
+	}
+
+	// http://localhost:7080/project06/login.do
+	
+	@RequestMapping("login.do")
+	public String login(Member m, Model d, 
+					HttpServletRequest request, HttpServletResponse response) {
+		if (m.getEmpno() != 0 && m.getPassword() != null) {
+			Member mem = service.memberLogin(m);
+			HttpSession session = request.getSession();
+			if ((mem != null && mem.getAuth().equals("ADMIN")) || (mem != null && mem.getAuth().equals("CEO")) || (mem != null && mem.getAuth().equals("HR")) ) {
+				session.setAttribute("mem", mem);
+				return "redirect:adminDashboard.do";
+			} else if ((mem != null && mem.getAuth() != "ADMIN") || (mem != null && mem.getAuth() != "CEO") || (mem != null && mem.getAuth() != "HR") ) {
+				session.setAttribute("mem", mem);
+				return "redirect:dashboard.do";
+			} else {
+				return "redirect:login.do";
+			}
+		}
+		
+		return "WEB-INF\\views\\login\\login.jsp";
+	}
+	
+	@RequestMapping("memberlist.do")
+	public String memberList(Model d, HttpServletRequest request, MemberSch sch) {
+		Member curMem = (Member)request.getSession().getAttribute("mem");
+        if(curMem == null){
+            return "redirect:login.do";
+        }
+		d.addAttribute("memlist", service.memberList(sch));
+		return "WEB-INF\\views\\member\\memberlist.jsp";	
+	}
+	
+	// http://localhost:7080/project06/memberDetail.do
+	@RequestMapping("memberDetail.do")
+	public String boardDetail(@RequestParam("mid") int mid, HttpServletRequest request, Model d){
+		Member curMem = (Member)request.getSession().getAttribute("mem");
+        if(curMem == null){
+            return "redirect:login.do";
+        }
+		d.addAttribute("member",service.getMemberDetail(mid));
+		
+		return "WEB-INF\\views\\member\\memberdetail.jsp";
+	}
+	
+	@RequestMapping("mypage.do")
+	public String myPage(@RequestParam("mid") int mid, HttpServletRequest request, Model d){
+		Member curMem = (Member)request.getSession().getAttribute("mem");
+        if(curMem == null){
+            return "redirect:login.do";
+        }
+		HttpSession session = request.getSession();
+		d.addAttribute("member",service.getMemberDetail(curMem.getMid()));
+		d.addAttribute("profile",service.getProfile(curMem.getMid()));
+		
+		return "WEB-INF\\views\\member\\mypage.jsp";
+	}
+	
+	@RequestMapping("authorize.do")
+	public String authorize(Model d, @RequestParam(value = "mid") int mid, Member upt) {
+		service.authorize(upt);
+		d.addAttribute("member", service.getMemberDetail(upt.getMid()));
+		d.addAttribute("proc", "upt");
+		return "WEB-INF\\views\\member\\memberdetail.jsp";
+	}
+	
+	@RequestMapping("deleteMember.do")
+	public String deleteMember(@RequestParam("mid") int mid, Model d) {
+		service.deleteMember(mid);
+		d.addAttribute("proc", "del");
+		return "WEB-INF\\views\\member\\memberdetail.jsp";
+	}
+	
+	@RequestMapping("logout.do")
+	public String logout(Member m, HttpServletRequest request) {
+		HttpSession session = request.getSession();
+		session.removeAttribute("mem");
+		return "redirect:login.do";
+	}
+	
+	@ResponseBody
+	@PostMapping("loginCheck.do")
+	public String loginCheck(@ModelAttribute Member member) throws Exception {
+		Member login = service.memberLogin(member);
+		String result = "";
+		if(login != null) {
+			result = "pass";
+		}else {
+			result = "fail";
+		}
+		return result;
+	}
+	
+	@RequestMapping("changePassword.do")
+	public String changePassword(Member upt, Model d) {
+		service.uptPassword(upt);
+		d.addAttribute("proc", "pwChange");
+		return "WEB-INF\\views\\member\\mypage.jsp";
+	}
+	
+	@RequestMapping("updateInfo.do")
+	public String uptInfo(Member upt, Model d) {
+		service.uptInfo(upt);
+		d.addAttribute("proc", "uptInfo");
+		return "WEB-INF\\views\\member\\mypage.jsp";
+	}
+	
+	@RequestMapping("uptProfile.do")
+	public String uptPfImg(HttpServletRequest request, MemberProfile ins, @RequestParam(value = "mid") int mid, Model d) {
+		HttpSession session = request.getSession();
+		service.insProfile(ins);
+		session.setAttribute("pfImg", ins.getFname());
+		d.addAttribute("proc", "uptImg");
+		return "WEB-INF\\views\\member\\mypage.jsp";
+	}
+	
+	@RequestMapping("delProfile.do")
+	public String delPfImg(HttpServletRequest request, @RequestParam(value = "mid") int mid, Model d) {
+		HttpSession session = request.getSession();
+		Member curMem = (Member)request.getSession().getAttribute("mem");
+		service.delProfile(curMem.getMid());
+		session.removeAttribute("pfImg");
+		d.addAttribute("proc", "delImg");
+		return "WEB-INF\\views\\member\\mypage.jsp";
+	}
+	
+
+}

@@ -1,0 +1,143 @@
+package pms.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import pms.dao.WorkPageDao;
+import pms.vo.Issues;
+import pms.vo.WorkPage;
+import pms.vo.WorkPageFile;
+import pms.vo.WorkPageSch;
+
+@Service
+public class WorkPageService {
+	@Autowired(required=false)
+	private WorkPageDao dao;
+	
+    public List<WorkPage> WorkPageList(int mid,int pid) {
+        return dao.WorkPageList(mid,pid);
+    }
+	public List<WorkPage> getWorkPageList(WorkPageSch sch,int mid,int pid){
+		sch.setMid(mid);
+		sch.setPid(pid);
+		sch.setJmstatus(sch.getJmstatus());
+        // 1. 전체 데이터 건수 설정
+        sch.setCount(	dao.WorkPageTotCnt(sch) ); 
+        //System.out.println("총건수:"+sch.getCount());
+        // 2. 선언한 한번에 보여줄 데이터 건수(요청값)
+		if(sch.getPageSize()==0) {
+			sch.setPageSize(10);
+		}
+        // 3. 총페이지수 : 데이터건수/한번에 보여주페이지 크기  [1][2][3][4]
+        //    ex) 18/5 ==> 3
+        //    ex) 18/5.0 (실수) ==> Math.ceil(3.6) : 4.0 ==> 정수형으로 변환하여 4를 총페이지수로 처리
+        sch.setPageCount( (int)Math.ceil( sch.getCount() /(double)sch.getPageSize()) );
+        
+        
+        // 4. 클릭한 현재 페이지 번호..(요청값)
+        if(sch.getCurPage()==0) {
+            sch.setCurPage(1);
+        }
+        if(sch.getCurPage() > sch.getPageCount()){
+            sch.setCurPage(sch.getPageCount());
+        }
+        // 5. 마지막번호(현재페이지*한번에보여주는페이지건수)
+        int end = sch.getCurPage()*sch.getPageSize();
+        if(end>sch.getCount()) { // 총데이터 건수보다 크면..
+            sch.setEnd(sch.getCount());
+        }else {
+            sch.setEnd(end);
+        }
+        if(end == 0) {
+            sch.setStart(0);
+        } else {
+            sch.setStart((sch.getCurPage() - 1) * sch.getPageSize() + 1);
+        }
+        // 1. 블럭의 크기 지정.
+        sch.setBlockSize(5);
+        // 2. 블럭의 번호 지정..
+        int blocknum = (int)(Math.ceil(sch.getCurPage()/(double)sch.getBlockSize()));
+
+        int endBlock = blocknum*sch.getBlockSize();
+        if(endBlock>sch.getPageCount()) {
+            endBlock = sch.getPageCount();
+        }
+        if(endBlock == 0) {
+            sch.setEndBlock(1);
+            sch.setStartBlock(1);
+        } else {
+            sch.setEndBlock(endBlock);
+            sch.setStartBlock((blocknum - 1) * sch.getBlockSize() + 1);
+        }
+		return dao.getWorkPageList(sch);
+	}
+	// 상세화면
+	public List<WorkPage> WorkPageDetailList(int mid,int jid){
+		return dao.WorkPageDetailList(mid, jid);
+	}
+	public List<WorkPage> getWokrPageDetail(WorkPage sch,int mid,int jid){
+		sch.setMid(mid);
+		sch.setJid(jid);
+		return dao.getWorkPageDetailList(sch);
+	}	
+	// 상세화면 파일다운로드 데이터
+	public List<WorkPage> getWorkPageFile(WorkPage filelist,int mid,int jid,int jmid){
+			filelist.setMid(mid);
+			filelist.setJid(jid);
+			filelist.setJmid(jmid);
+		return dao.getWorkPageFile(filelist);
+	}
+	// 승인요청
+	public void updateWorkPage(WorkPage upt){
+		dao.updateWorkPage(upt);
+	}
+	// 파일삭제
+	public void deleteWorkPageFile(int fid){
+		dao.deleteWorkPageFile(fid);
+	}
+	// 파일서버 정보(공통정보)
+	@Value("${upload}")
+	private String path;
+	public void insertWorkPageFile(WorkPageFile ins,int jmid) {		
+		MultipartFile mpf = ins.getReport();
+		String fname = mpf.getOriginalFilename();
+		File f = new File(path+fname);
+		try {
+			mpf.transferTo(f);
+			System.out.println("파일업로드 완성");
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		dao.insertFile(new WorkPageFile(path,fname,jmid));
+	}
+	public void insertIssue(Issues ins,int jmid) {
+			ins.setJmid(jmid);
+		dao.insertIssue(ins);
+	}
+	public Issues getWorkIsDetail(Issues sch,int iid){
+		sch.setIid(iid);
+		return dao.getWorkIsDetail(iid);
+	}
+	
+	public void updateIssues(Issues upt) {
+			//upt.setIid(iid);
+		dao.updateIssues(upt); 
+		//return dao.getWorkIsDetail(upt.getIid());
+	}	
+	
+	public void deleteIssues(int iid) {
+		dao.deleteIssues(iid);
+	}	
+	
+	
+}

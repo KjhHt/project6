@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pms.dao.CalendarDao">
+	<select id="getCalList" parameterType="int" resultType="calendar">
+		select * from CALENDARMEMBER where MID=#{mid}
+	</select> 
+	<insert id="insertCalendar" parameterType="calendar" >
+		insert into CALENDARMEMBER values(calendarmember_seq.nextval,#{mid},#{title},#{cstart},
+			#{cend},#{content},null,#{backgroundColor},#{textColor},
+			#{allDay})				
+	</insert>
+	<update id="updateCalendar" parameterType="calendar">
+	 UPDATE CALENDARMEMBER
+	    SET title = #{title},
+	        cstart = #{cstart},
+	        cend = #{cend},
+	        content = #{content},
+	        backgroundcolor=#{backgroundColor},
+	        textcolor=#{textColor},
+	        allday=#{allDay}
+	   WHERE mcid = #{mcid}
+	</update> 
+	<delete id="deleteCalendar" parameterType="int" >
+	   DELETE FROM CALENDARMEMBER
+	   WHERE mcid= #{mcid}
+	</delete>  	
+</mapper>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+        
+<mapper namespace="pms.dao.PMDao">
+	<resultMap type="jobdto" id="getJobPlan">
+		<result column="jid" property="id"/>
+		<result column="jname" property="name"/>
+		<result column="jstart" property="start"/>
+		<result column="jend" property="end"/>
+	</resultMap>
+	<select id="getJobPlan"	resultMap="getJobPlan" parameterType="int">
+		SELECT jid, jname, TO_CHAR(jstart, 'yyyy-mm-dd') jstart, TO_CHAR(jend, 'yyyy-mm-dd') jend, required, realstart, realend, content, pid, jstatus
+		FROM jobplan
+		WHERE pid = #{pid}
+		ORDER BY jstart
+	</select>
+	<select id="getJobMember" resultType="jmdto" parameterType="int">
+		SELECT m.mid, m.email, m.name, jmid, progress, jmstatus, jm.ppid
+		FROM jobmember jm, participants pp, member m
+		WHERE jm.ppid = pp.ppid AND pp.mid = m.mid
+			AND jid = #{jid}
+	</select>
+	<select id="getParticipants" resultType="jmdto" parameterType="int">
+		SELECT m.mid, pp.ppid, email, name
+		FROM participants pp, member m
+		WHERE pp.mid = m.mid
+			AND pid = #{pid}
+			<!-- AND exitdate IS NULL -->
+	</select>
+	<insert id="addJobPlan" parameterType="jobdto">
+		INSERT INTO jobplan(jid, jname, jstart, jend, content, jregdate, juptdate, required, pid)
+		VALUES(jobplan_seq.nextval, #{name}, TO_DATE(#{start}, 'mm/dd/yyyy'), TO_DATE(#{end}, 'mm/dd/yyyy'), #{content}, sysdate, sysdate, #{required}, #{pid})
+	</insert>
+	<insert id="addJobMember">
+		INSERT INTO jobmember VALUES(jobmember_seq.nextval, jobplan_seq.currval, #{ppid}, 0, null)
+	</insert>
+</mapper>

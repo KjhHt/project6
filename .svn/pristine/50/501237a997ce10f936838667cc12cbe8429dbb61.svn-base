@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>
+		<typeAlias type="pms.vo.Member" alias="member"/>
+		<typeAlias type="pms.vo.Notice" alias="notice"/>
+		<typeAlias type="pms.vo.WorkPage" alias="workpage"/>
+		<typeAlias type="pms.vo.Issues" alias="issues"/>
+		<typeAlias type="pms.vo.Project" alias="project"/>
+		<typeAlias type="pms.vo.Jobplan" alias="jobplan"/>
+		<typeAlias type="pms.dto.IssuesDashDto" alias="issuesdash"/>
+		<typeAlias type="pms.dto.IssuesSch" alias="issuessch"/>
+		<typeAlias type="pms.dto.NoticeSch" alias="noticesch"/>
+		<typeAlias type="pms.dto.ProjectSch" alias="projectsch"/>
+		<typeAlias type="pms.vo.WorkPageFile" alias="workpagefile"/>
+		<typeAlias type="pms.dto.JobDTO" alias="jobdto"/>
+		<typeAlias type="pms.dto.JobMemberDTO" alias="jmdto"/>
+		<typeAlias type="pms.dto.CalendarMember" alias="calendar"/>
+		<typeAlias type="pms.dto.ProjectMemberDTO" alias="promember"/>
+		<typeAlias type="pms.vo.Participants" alias="participants"/>
+		<typeAlias type="pms.dto.ProjectDto" alias="prjdto"/>
+		<typeAlias type="pms.vo.WorkPageSch" alias="workpagesch"/>
+		<typeAlias type="pms.vo.MemberSch" alias="membersch"/>
+		<typeAlias type="pms.vo.MemberProfile" alias="memberprofile"/>
+	</typeAliases>
+	<mappers>
+		<mapper resource="resource/mapper/MemberMapper.xml"/>
+		<mapper resource="resource/mapper/WorkPageMapper.xml"/>
+		<mapper resource="resource/mapper/DashboardMapper.xml"/>
+		<mapper resource="resource/mapper/ProjectMapper.xml"/>
+		<mapper resource="resource/mapper/GlobalMapper.xml"/>
+		<mapper resource="resource/mapper/IssuesMapper.xml"/>
+		<mapper resource="resource/mapper/PMmapper.xml"/>
+		<mapper resource="resource/mapper/CalendarMapper.xml"/>
+	</mappers>
+</configuration>
